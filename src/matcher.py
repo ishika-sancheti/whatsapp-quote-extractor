@@ -1,5 +1,4 @@
 #identify requests and supplier replies for the same and match them
-from parser import parse_messages
 import re
 
 pattern1=re.compile(                                                                #customer side
@@ -77,6 +76,4 @@ def matching(messages):
     print("CLASSIFIED:", quotations)
     print("MATCHED:", len(matched), matched)
     print("UNMATCHED:", len(pending_responses), pending_responses)
-
-messages=parse_messages()
-result=matching(messages)
+    return latest_quotes
