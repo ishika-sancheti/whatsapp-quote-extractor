@@ -1,0 +1,67 @@
+#identify requests and supplier replies for the same and match them
+from parser import parse_messages
+import re
+
+pattern1=re.compile(
+    r"(quote|pl\.?\s*quote|please\s+quote|"
+    r"price\s*&\s*availability|price\s+and\s+availability|"
+    r"please\s+confirm\s+price|kindly\s+check|"
+    r"please\s+confirm|kindly\s+quote|"
+    r"please\s+arrange\s+quotation|"
+    r"any\s+alternative)", re.IGNORECASE)   #customer side
+pattern2=re.compile(r"\b\d[\d,]*(?:\.\d{1,2})?\s*\+\s*\d+%", re.IGNORECASE)             #supplier side
+
+def matching(messages):
+    quotations=[]
+    #first categorise the messages as req or resp
+    for msg in messages:
+        if msg["message"] is None:
+            continue
+        if msg["sender"]=="Ganesh Enterprises":
+            if pattern1.search(msg["message"]):
+                category="request"
+            else: 
+                category="detail"
+        else:
+            if pattern2.search(msg["message"]):
+                category="response"
+            else: continue   
+        quotations.append({**msg, "category": category})
+    
+    #for matching req w responses 
+    active_req=None
+    active_quote_index=None
+    matched=[]
+    pending_responses=[]
+
+    for item in quotations:
+        if item["category"]=="request":
+            active_req=item                             #this req is now active 
+            active_quote_index=None                     #no quote received yet so index is none
+        elif item["category"]==["detail"]:
+            if active_req is not None and active_quote_index is None:
+                active_req["message"]+= " " + item["message"]          
+        elif item["category"]=="response":
+            if active_req is None:                      #if no req found 
+                pending_responses.append(item)          
+                continue
+            if active_quote_index is None:              #if no quote received, then match the active req w the response
+                matched.append({
+                    "item-details":active_req["message"],
+                    "price":item["message"],
+                    "request-date":active_req["timestamp"],
+                    "quote-date":item["timestamp"]
+                })
+                active_quote_index=len(matched)-1       
+            else:
+                matched[active_quote_index]["price"]=item["message"]
+                matched[active_quote_index]["quote-date"]=item["timestamp"]
+
+    #participants=set(msg["sender"] for msg in messages)
+    #supplier=participants - {"Ganesh Enterprises"}
+    print("CLASSIFIED:", quotations)
+    print("MATCHED:", len(matched), matched)
+    print("UNMATCHED:", len(pending_responses), pending_responses)
+
+messages=parse_messages()
+result=matching(messages)
