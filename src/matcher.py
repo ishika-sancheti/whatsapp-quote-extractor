@@ -15,6 +15,8 @@ status_pattern=re.compile(r"\b(no stock|not available|available|ready|wait)\b",r
 
 attachment_pattern=re.compile(r"(image omitted|document omitted|WhatsApp Image|\.jpeg|\.jpg|\.png)", re.IGNORECASE)        #should def be ignore
 
+quantity_pattern=re.compile("\b\d+\s*(?:nos?\.?|pieces?|pcs?)\b", re.IGNORECASE)
+
 def matching(messages):
     quotations=[]
     #first categorise the messages as req or resp
@@ -33,7 +35,6 @@ def matching(messages):
                 category="response"
             else: continue   
         quotations.append({**msg, "category": category})
-
 
     #for matching req w responses 
     active_req=None
@@ -63,7 +64,14 @@ def matching(messages):
             else:
                 matched[active_quote_index]["price"]=item["message"]
                 matched[active_quote_index]["quote-date"]=item["timestamp"]
-
+    
+    #last quote wins
+    latest_quotes={}
+    for quote in matched:
+        item_key=quantity_pattern.sub("", quote["item-details"])
+        item_key=quote["item-details"].strip(" -,.").lower()
+        latest_quotes[item_key]=quote                       #rewrite if same appears again
+        
     #participants=set(msg["sender"] for msg in messages)
     #supplier=participants - {"Ganesh Enterprises"}
     print("CLASSIFIED:", quotations)
