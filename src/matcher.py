@@ -2,14 +2,18 @@
 from parser import parse_messages
 import re
 
-pattern1=re.compile(
+pattern1=re.compile(                                                                #customer side
     r"(quote|pl\.?\s*quote|please\s+quote|"
     r"price\s*&\s*availability|price\s+and\s+availability|"
     r"please\s+confirm\s+price|kindly\s+check|"
     r"please\s+confirm|kindly\s+quote|"
     r"please\s+arrange\s+quotation|"
-    r"any\s+alternative)", re.IGNORECASE)   #customer side
+    r"any\s+alternative)", re.IGNORECASE)   
 pattern2=re.compile(r"\b\d[\d,]*(?:\.\d{1,2})?\s*\+\s*\d+%", re.IGNORECASE)             #supplier side
+
+status_pattern=re.compile(r"\b(no stock|not available|available|ready|wait)\b",re.IGNORECASE)           #other than price, if they share status updates
+
+attachment_pattern=re.compile(r"(image omitted|document omitted|WhatsApp Image|\.jpeg|\.jpg|\.png)", re.IGNORECASE)        #should def be ignore
 
 def matching(messages):
     quotations=[]
@@ -17,17 +21,20 @@ def matching(messages):
     for msg in messages:
         if msg["message"] is None:
             continue
+        if attachment_pattern.search(msg["message"]):
+            continue
         if msg["sender"]=="Ganesh Enterprises":
             if pattern1.search(msg["message"]):
                 category="request"
             else: 
                 category="detail"
         else:
-            if pattern2.search(msg["message"]):
+            if pattern2.search(msg["message"]) or status_pattern.search(msg["message"]):
                 category="response"
             else: continue   
         quotations.append({**msg, "category": category})
-    
+
+
     #for matching req w responses 
     active_req=None
     active_quote_index=None
