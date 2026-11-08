@@ -7,7 +7,8 @@ pattern1=re.compile(                                                            
     r"please\s+confirm\s+price|kindly\s+check|"
     r"please\s+confirm|kindly\s+quote|"
     r"please\s+arrange\s+quotation|"
-    r"any\s+alternative)", re.IGNORECASE)   
+    r"any\s+alternative)", re.IGNORECASE)  
+
 pattern2=re.compile(r"\b\d[\d,]*(?:\.\d{1,2})?\s*\+\s*\d+%", re.IGNORECASE)             #supplier side
 
 status_pattern=re.compile(r"\b(no stock|not available|available|ready|wait)\b",re.IGNORECASE)           #other than price, if they share status updates
@@ -45,7 +46,7 @@ def matching(messages):
         if item["category"]=="request":
             active_req=item                             #this req is now active 
             active_quote_index=None                     #no quote received yet so index is none
-        elif item["category"]==["detail"]:
+        elif item["category"]=="detail":
             if active_req is not None and active_quote_index is None:
                 active_req["message"]+= " " + item["message"]          
         elif item["category"]=="response":
